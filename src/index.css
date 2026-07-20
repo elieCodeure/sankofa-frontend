@@ -1,0 +1,154 @@
+@import url('https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,300;9..144,400;9..144,500;9..144,600;9..144,700&family=Inter:wght@300;400;500;600&display=swap');
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* SANKHOFA — Héritage Solaire
+   Palette : noir profond, ivoire, or brûlé, terracotta, indigo nuit, vert sauge
+   Tous les tokens sont en HSL.
+*/
+
+@layer base {
+  :root {
+    /* Surfaces */
+    --background: 36 22% 96%;          /* ivoire chaud */
+    --foreground: 24 18% 9%;            /* noir terre */
+
+    --surface-deep: 22 28% 10%;         /* noir profond chaud */
+    --surface-deep-foreground: 36 30% 94%;
+
+    --card: 36 22% 96%;
+    --card-foreground: 24 18% 9%;
+
+    --popover: 36 22% 96%;
+    --popover-foreground: 24 18% 9%;
+
+    /* Brand */
+    --primary: 24 18% 9%;               /* noir éditorial */
+    --primary-foreground: 36 30% 94%;
+
+    --secondary: 32 28% 90%;
+    --secondary-foreground: 24 18% 9%;
+
+    --muted: 32 18% 88%;
+    --muted-foreground: 24 10% 38%;
+
+    --accent: 32 70% 48%;               /* OR BRÛLÉ — signature */
+    --accent-foreground: 24 18% 9%;
+
+    --terracotta: 14 62% 48%;
+    --terracotta-foreground: 36 30% 94%;
+
+    --indigo: 230 38% 22%;
+    --indigo-foreground: 36 30% 94%;
+
+    --sage: 90 14% 42%;
+    --sage-foreground: 36 30% 94%;
+
+    --destructive: 0 70% 45%;
+    --destructive-foreground: 36 30% 94%;
+
+    --border: 30 18% 84%;
+    --input: 30 18% 84%;
+    --ring: 32 70% 48%;
+
+    --radius: 0.25rem;
+
+    /* Gradients & effets */
+    --gradient-sun: radial-gradient(ellipse at 30% 20%, hsl(32 80% 58% / 0.35), transparent 60%);
+    --gradient-earth: linear-gradient(180deg, hsl(22 28% 10%) 0%, hsl(14 32% 14%) 100%);
+    --gradient-gold: linear-gradient(135deg, hsl(38 75% 62%), hsl(28 70% 42%));
+    --gradient-veil: linear-gradient(180deg, transparent 0%, hsl(22 28% 10% / 0.85) 100%);
+
+    --shadow-elegant: 0 30px 80px -20px hsl(24 30% 8% / 0.35);
+    --shadow-soft: 0 10px 40px -10px hsl(24 30% 8% / 0.15);
+
+    --transition-silk: cubic-bezier(0.22, 1, 0.36, 1);
+  }
+
+  .dark {
+    --background: 22 28% 8%;
+    --foreground: 36 30% 94%;
+    --card: 22 28% 10%;
+    --card-foreground: 36 30% 94%;
+    --popover: 22 28% 10%;
+    --popover-foreground: 36 30% 94%;
+    --primary: 36 30% 94%;
+    --primary-foreground: 24 18% 9%;
+    --secondary: 22 18% 16%;
+    --secondary-foreground: 36 30% 94%;
+    --muted: 22 18% 16%;
+    --muted-foreground: 32 12% 65%;
+    --accent: 32 70% 55%;
+    --accent-foreground: 24 18% 9%;
+    --border: 22 18% 18%;
+    --input: 22 18% 18%;
+    --ring: 32 70% 55%;
+  }
+}
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+
+  html {
+    scroll-behavior: smooth;
+  }
+
+  body {
+    @apply bg-background text-foreground antialiased;
+    font-family: 'Inter', system-ui, sans-serif;
+    font-feature-settings: "ss01", "cv11";
+  }
+
+  h1, h2, h3, h4, .font-display {
+    font-family: 'Fraunces', 'Times New Roman', serif;
+    font-optical-sizing: auto;
+    letter-spacing: -0.02em;
+  }
+}
+
+@layer utilities {
+  .text-balance { text-wrap: balance; }
+  .text-pretty { text-wrap: pretty; }
+
+  .grain::before {
+    content: "";
+    position: absolute;
+    inset: 0;
+    pointer-events: none;
+    opacity: 0.06;
+    mix-blend-mode: multiply;
+    background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+  }
+
+  .gold-line {
+    background: var(--gradient-gold);
+    -webkit-background-clip: text;
+    background-clip: text;
+    color: transparent;
+  }
+
+  .marquee {
+    animation: marquee 40s linear infinite;
+  }
+
+  @keyframes marquee {
+    from { transform: translateX(0); }
+    to { transform: translateX(-50%); }
+  }
+
+  @keyframes float-in {
+    from { opacity: 0; transform: translateY(20px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+  .animate-float-in { animation: float-in 1s var(--transition-silk) both; }
+
+  @keyframes shimmer {
+    0%, 100% { opacity: 0.5; }
+    50% { opacity: 1; }
+  }
+  .animate-shimmer { animation: shimmer 3s ease-in-out infinite; }
+}

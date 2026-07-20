@@ -1,0 +1,226 @@
+import axios from 'axios';
+
+const API_URL = 'http://127.0.0.1:8000/api';
+
+const api = axios.create({
+  baseURL: API_URL,
+  headers: {
+    'Content-Type': 'application/json',
+  },
+});
+
+// Interceptor to add token to requests
+api.interceptors.request.use(
+  (config) => {
+    const token = localStorage.getItem('access_token');
+    if (token) {
+      config.headers['Authorization'] = `Bearer ${token}`;
+    }
+    return config;
+  },
+  (error) => Promise.reject(error)
+);
+
+// Interceptor to handle token expiration
+api.interceptors.response.use(
+  (response) => response,
+  async (error) => {
+    const originalRequest = error.config;
+    if (error.response && error.response.status === 401 && !originalRequest._retry) {
+      originalRequest._retry = true;
+      const refreshToken = localStorage.getItem('refresh_token');
+      if (refreshToken) {
+        try {
+          const response = await axios.post(`${API_URL}/accounts/token/refresh/`, {
+            refresh: refreshToken
+          });
+          if (response.status === 200) {
+            const { access } = response.data;
+            localStorage.setItem('access_token', access);
+            originalRequest.headers['Authorization'] = `Bearer ${access}`;
+            return api(originalRequest);
+          }
+        } catch (refreshError) {
+          localStorage.clear();
+          window.location.href = '/auth';
+          return Promise.reject(refreshError);
+        }
+      }
+    }
+    return Promise.reject(error);
+  }
+);
+
+export const authService = {
+  login: async (email, password) => {
+    const response = await api.post('/accounts/login/', { email, password });
+    if (response.data.tokens) {
+      localStorage.setItem('access_token', response.data.tokens.access);
+      localStorage.setItem('refresh_token', response.data.tokens.refresh);
+      localStorage.setItem('user', JSON.stringify(response.data.user));
+    }
+    return response.data;
+  },
+  register: async (userData) => {
+    // Check if userData contains a file (id_card)
+    let config = {};
+    let data = userData;
+    if (userData.id_card instanceof File) {
+      data = new FormData();
+      Object.keys(userData).forEach(key => {
+        data.append(key, userData[key]);
+      });
+      config = { headers: { 'Content-Type': 'multipart/form-data' } };
+    }
+    const response = await api.post('/accounts/register/', data, config);
+    if (response.data.tokens) {
+      localStorage.setItem('access_token', response.data.tokens.access);
+      localStorage.setItem('refresh_token', response.data.tokens.refresh);
+      localStorage.setItem('user', JSON.stringify(response.data.user));
+    }
+    return response.data;
+  },
+  getCurrentUser: () => {
+    const user = localStorage.getItem('user');
+    return user ? JSON.parse(user) : null;
+  },
+  logout: () => {
+    localStorage.clear();
+    window.location.href = '/auth';
+  },
+  updateProfile: async (data) => {
+    const response = await api.patch('/accounts/current-user/', data);
+    if (response.data) {
+      localStorage.setItem('user', JSON.stringify(response.data));
+    }
+    return response.data;
+  },
+  changePassword: async (data) => {
+    const response = await api.put('/accounts/change-password/', data);
+    return response.data;
+  }
+};
+
+export const orderService = {
+  getOrders: async () => {
+    const response = await api.get('/orders/list-create/');
+    return response.data;
+  },
+  createOrder: async (orderData) => {
+    const response = await api.post('/orders/list-create/', orderData);
+    return response.data;
+  },
+  getSellerOrders: async () => {
+    const response = await api.get('/orders/seller-orders/');
+    return response.data;
+  }
+};
+
+export const productService = {
+  getProducts: async (params = {}) => {
+    const response = await api.get('/products/', { params });
+    return response.data;
+  },
+  createProduct: async (data: any) => {
+    let config = {};
+    let payload = data;
+    
+    // Check if data contains a File object (image)
+    if (data.image instanceof File) {
+      payload = new FormData();
+      Object.keys(data).forEach(key => {
+        if (data[key] !== null && data[key] !== undefined) {
+          payload.append(key, data[key]);
+        }
+      });
+      config = { headers: { 'Content-Type': 'multipart/form-data' } };
+    }
+    
+    const response = await api.post('/products/', payload, config);
+    return response.data;
+  },
+  updateProduct: async (id: number, data: any) => {
+    let config = {};
+    let payload = data;
+    
+    // Check if data contains a File object (image)
+    if (data.image instanceof File) {
+      payload = new FormData();
+      Object.keys(data).forEach(key => {
+        if (data[key] !== null && data[key] !== undefined) {
+          payload.append(key, data[key]);
+        }
+      });
+      config = { headers: { 'Content-Type': 'multipart/form-data' } };
+    }
+    
+    const response = await api.patch(`/products/${id}/`, payload, config);
+    return response.data;
+  },
+  deleteProduct: async (id: number) => {
+    await api.delete(`/products/${id}/`);
+  },
+  getCategories: async () => {
+    const response = await api.get('/products/categories/');
+    return response.data;
+  },
+  getCountries: async () => {
+    const response = await api.get('/products/countries/');
+    return response.data;
+  }
+};
+
+export const collaborationService = {
+  getSellers: async () => {
+    const response = await api.get('/collaboration/sellers/');
+    return response.data;
+  },
+  getRequests: async () => {
+    const response = await api.get('/collaboration/requests/');
+    return response.data;
+  },
+  sendRequest: async (receiverId) => {
+    const response = await api.post('/collaboration/requests/', { receiver: receiverId });
+    return response.data;
+  },
+  acceptRequest: async (requestId) => {
+    const response = await api.post(`/collaboration/requests/${requestId}/accept/`);
+    return response.data;
+  },
+  rejectRequest: async (requestId) => {
+    const response = await api.post(`/collaboration/requests/${requestId}/reject/`);
+    return response.data;
+  }
+};
+
+export const logisticsService = {
+  getTransporters: async () => {
+    const response = await api.get('/logistics/transporters/');
+    return response.data;
+  },
+  getShipments: async () => {
+    const response = await api.get('/logistics/shipments/');
+    return response.data;
+  },
+  requestShipment: async (data) => {
+    const response = await api.post('/logistics/shipments/', data);
+    return response.data;
+  },
+  updateShipmentStatus: async (id, status, verification_code = null) => {
+    const response = await api.post(`/logistics/shipments/${id}/update-status/`, { status, verification_code });
+    return response.data;
+  },
+  getRoutes: async () => {
+    const response = await api.get('/logistics/routes/');
+    return response.data;
+  },
+  createRoute: async (data) => {
+    const response = await api.post('/logistics/routes/', data);
+    return response.data;
+  },
+  deleteRoute: async (id) => {
+    await api.delete(`/logistics/routes/${id}/`);
+  }
+};
+
+export default api;
