@@ -1,5 +1,5 @@
 import { Navigate, useLocation } from "react-router-dom";
-import { authService } from "@/services/api";
+import { authService } from "@/api-services";
 
 type Role = "CLIENT" | "SELLER" | "TRANSPORTER";
 

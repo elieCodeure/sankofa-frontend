@@ -17,7 +17,7 @@ export const Navbar = ({ lang, setLang, showCart = true }: NavbarProps) => {
   const [user, setUser] = useState<any>(null);
   const { setIsOpen, totalItems } = useCart();
 
-  // Le user vient du localStorage : on le lit après montage pour éviter
+  // Le user vient des cookies : on le lit après montage pour éviter
   // tout décalage entre un premier rendu et l'état réel du navigateur.
   useEffect(() => {
     setUser(authService.getCurrentUser());

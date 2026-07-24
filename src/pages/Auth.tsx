@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { authService } from "@/services/api";
+import { authService } from "@/api-services";
 import { DEMO_ACCOUNTS } from "@/services/mockDb";
 import { useToast } from "@/components/ui/use-toast";
 import { ArrowRight, Mail, Lock, ShieldCheck, Store, Truck, User, ArrowLeft, Sparkles } from "lucide-react";

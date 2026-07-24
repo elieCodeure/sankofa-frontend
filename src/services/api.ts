@@ -42,10 +42,12 @@ import {
   type MockRoute,
 } from "./mockDb";
 
+import Cookies from 'js-cookie';
+
 // ── Session courante ────────────────────────────────────────────────
 
 function getCurrentUserRaw(): any {
-  const user = localStorage.getItem("user");
+  const user = Cookies.get("user");
   return user ? JSON.parse(user) : null;
 }
 
@@ -55,12 +57,14 @@ function requireCurrentUser(): any {
   return user;
 }
 
+const COOKIE_OPTIONS = { secure: true, sameSite: 'strict' as const };
+
 function persistSession(user: any) {
   const access = `mock-access.${user.id}.${Date.now()}`;
   const refresh = `mock-refresh.${user.id}.${Date.now()}`;
-  localStorage.setItem("access_token", access);
-  localStorage.setItem("refresh_token", refresh);
-  localStorage.setItem("user", JSON.stringify(user));
+  Cookies.set("access_token", access, COOKIE_OPTIONS);
+  Cookies.set("refresh_token", refresh, COOKIE_OPTIONS);
+  Cookies.set("user", JSON.stringify(user), COOKIE_OPTIONS);
   return { access, refresh };
 }
 
@@ -127,9 +131,9 @@ export const authService = {
   getCurrentUser: () => getCurrentUserRaw(),
 
   logout: () => {
-    localStorage.removeItem("access_token");
-    localStorage.removeItem("refresh_token");
-    localStorage.removeItem("user");
+    Cookies.remove("access_token", COOKIE_OPTIONS);
+    Cookies.remove("refresh_token", COOKIE_OPTIONS);
+    Cookies.remove("user", COOKIE_OPTIONS);
     window.location.href = "/auth";
   },
 
@@ -150,7 +154,7 @@ export const authService = {
     setUsers(updated);
     const fresh = updated.find((u) => u.id === current.id)!;
     const publicUser = userPublicShape(fresh);
-    localStorage.setItem("user", JSON.stringify(publicUser));
+    Cookies.set("user", JSON.stringify(publicUser), COOKIE_OPTIONS);
     return delay(publicUser);
   },
 

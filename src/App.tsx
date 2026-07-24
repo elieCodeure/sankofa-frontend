@@ -41,6 +41,7 @@ const App = () => (
             <Route path="/seller/dashboard/shipping" element={<RequireAuth allow={["SELLER"]}><DashboardSeller view="shipping" /></RequireAuth>} />
             <Route path="/seller/dashboard/collab" element={<RequireAuth allow={["SELLER"]}><DashboardSeller view="collab" /></RequireAuth>} />
             <Route path="/seller/dashboard/profile" element={<RequireAuth allow={["SELLER"]}><DashboardSeller view="profile" /></RequireAuth>} />
+            <Route path="/seller/dashboard/product/:id" element={<RequireAuth allow={["SELLER"]}><DashboardSeller view="productDetail" /></RequireAuth>} />
 
             <Route path="/logistics/dashboard" element={<RequireAuth allow={["TRANSPORTER"]}><DashboardLogistics /></RequireAuth>} />
             <Route path="/logistics/dashboard/routes" element={<RequireAuth allow={["TRANSPORTER"]}><DashboardLogistics view="routes" /></RequireAuth>} />
