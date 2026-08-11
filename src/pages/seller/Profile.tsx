@@ -23,6 +23,12 @@ export function Profile() {
     }
   });
 
+  const [passwordData, setPasswordData] = useState({
+    old_password: "",
+    new_password: "",
+    confirm_password: ""
+  });
+
   const handleUpdateProfile = async (e: React.FormEvent) => {
     e.preventDefault();
     try {
@@ -32,6 +38,22 @@ export function Profile() {
       setUser(updatedUser);
     } catch (err) {
       toast.error("Erreur lors de la mise à jour.");
+    }
+  };
+
+  const handleChangePassword = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (passwordData.new_password !== passwordData.confirm_password) {
+      toast.error("Les mots de passe ne correspondent pas.");
+      return;
+    }
+    try {
+      await authService.changePassword(passwordData);
+      toast.success("Mot de passe modifié !");
+      setPasswordData({ old_password: "", new_password: "", confirm_password: "" });
+    } catch (err: any) {
+      const msg = err.response?.data?.old_password?.[0] || "Erreur lors du changement.";
+      toast.error(msg);
     }
   };
 
@@ -96,6 +118,52 @@ export function Profile() {
                          />
                       </div>
                       <Button type="submit" className="bg-accent text-accent-foreground w-full h-12 text-sm font-bold uppercase tracking-widest shadow-xl shadow-accent/10">Valider mon identité boutique</Button>
+                   </form>
+                </CardContent>
+             </Card>
+
+             {/* Sécurité */}
+             <Card className="bg-white/5 border-white/10 overflow-hidden shadow-2xl">
+                <CardHeader className="border-b border-white/5 bg-white/[0.02]">
+                  <div className="flex items-center gap-3">
+                    <ShieldCheck className="text-accent" size={20} />
+                    <CardTitle className="text-lg">Sécurité & Mot de passe</CardTitle>
+                  </div>
+                </CardHeader>
+                <CardContent className="pt-8">
+                   <form onSubmit={handleChangePassword} className="space-y-6">
+                      <div className="space-y-2">
+                        <Label className="text-xs uppercase tracking-widest text-white/60">Ancien mot de passe</Label>
+                        <Input 
+                          type="password"
+                          value={passwordData.old_password}
+                          onChange={(e) => setPasswordData({...passwordData, old_password: e.target.value})}
+                          className="bg-deep border-white/10 focus:border-accent/50"
+                        />
+                      </div>
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div className="space-y-2">
+                          <Label className="text-xs uppercase tracking-widest text-white/60">Nouveau mot de passe</Label>
+                          <Input 
+                            type="password"
+                            value={passwordData.new_password}
+                            onChange={(e) => setPasswordData({...passwordData, new_password: e.target.value})}
+                            className="bg-deep border-white/10 focus:border-accent/50"
+                          />
+                        </div>
+                        <div className="space-y-2">
+                          <Label className="text-xs uppercase tracking-widest text-white/60">Confirmer le mot de passe</Label>
+                          <Input 
+                            type="password"
+                            value={passwordData.confirm_password}
+                            onChange={(e) => setPasswordData({...passwordData, confirm_password: e.target.value})}
+                            className="bg-deep border-white/10 focus:border-accent/50"
+                          />
+                        </div>
+                      </div>
+                      <Button type="submit" variant="outline" className="border-accent/20 text-accent hover:bg-accent hover:text-accent-foreground">
+                        Mettre à jour le mot de passe
+                      </Button>
                    </form>
                 </CardContent>
              </Card>

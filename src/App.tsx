@@ -6,6 +6,10 @@ import { TooltipProvider } from "@/components/ui/tooltip";
 import Index from "./pages/Index.tsx";
 import Marketplace from "./pages/Marketplace.tsx";
 import Auth from "./pages/Auth.tsx";
+import Register from "./pages/Register.tsx";
+import ForgotPassword from "./pages/ForgotPassword.tsx";
+import ResetPassword from "./pages/ResetPassword.tsx";
+import ActivateAccount from "./pages/ActivateAccount.tsx";
 import DashboardClient from "./pages/DashboardClient.tsx";
 import DashboardSeller from "./pages/DashboardSeller.tsx";
 import DashboardLogistics from "./pages/DashboardLogistics.tsx";
@@ -29,6 +33,10 @@ const App = () => (
             <Route path="/marketplace" element={<Marketplace />} />
             <Route path="/shipping" element={<Shipping />} />
             <Route path="/auth" element={<Auth />} />
+            <Route path="/register" element={<Register />} />
+            <Route path="/forgot-password" element={<ForgotPassword />} />
+            <Route path="/reset-password/:uid/:token" element={<ResetPassword />} />
+            <Route path="/activate/:uid/:token" element={<ActivateAccount />} />
 
             <Route path="/client/dashboard" element={<RequireAuth allow={["CLIENT"]}><DashboardClient /></RequireAuth>} />
             <Route path="/client/dashboard/orders" element={<RequireAuth allow={["CLIENT"]}><DashboardClient view="orders" /></RequireAuth>} />

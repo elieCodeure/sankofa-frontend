@@ -1,14 +1,12 @@
 import { useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, Link } from "react-router-dom";
 import { authService } from "@/api-services";
+import { useGoogleLogin } from '@react-oauth/google';
 import { DEMO_ACCOUNTS } from "@/services/mockDb";
 import { useToast } from "@/components/ui/use-toast";
-import { ArrowRight, Mail, Lock, ShieldCheck, Store, Truck, User, ArrowLeft, Sparkles } from "lucide-react";
+import { ArrowRight, Mail, Lock, ShieldCheck, ArrowLeft, Sparkles } from "lucide-react";
 import sankofaMark from "@/assets/sankofa-mark.png";
 
-/* ─────────────────────────────────────────
-   Sankofa Mark – Image officielle
-───────────────────────────────────────── */
 const SankofaMark = ({ size = 160 }: { size?: number }) => (
   <img 
     src={sankofaMark} 
@@ -21,9 +19,6 @@ const SankofaMark = ({ size = 160 }: { size?: number }) => (
   />
 );
 
-/* ─────────────────────────────────────────
-   Grille kente (motif décoratif arrière-plan)
-───────────────────────────────────────── */
 const KenteGrid = () => (
   <svg
     aria-hidden="true"
@@ -44,9 +39,6 @@ const KenteGrid = () => (
   </svg>
 );
 
-/* ─────────────────────────────────────────
-   Composant Input custom
-───────────────────────────────────────── */
 const GoldInput = ({
   id, name, type = "text", placeholder, required, icon: Icon
 }: {
@@ -83,21 +75,7 @@ const GoldInput = ({
   </div>
 );
 
-/* ─────────────────────────────────────────
-   Role Pill
-───────────────────────────────────────── */
-const roles = [
-  { value: "CLIENT", label: "Client", sub: "Acheteur", icon: User },
-  { value: "SELLER", label: "Vendeur", sub: "Artisan", icon: Store },
-  { value: "TRANSPORTER", label: "Expéditeur", sub: "Logistique", icon: Truck },
-];
-
-/* ─────────────────────────────────────────
-   Auth Page
-───────────────────────────────────────── */
 const Auth = () => {
-  const [isLogin, setIsLogin] = useState(true);
-  const [role, setRole] = useState("CLIENT");
   const [loading, setLoading] = useState(false);
   const [hoverBtn, setHoverBtn] = useState(false);
   const { toast } = useToast();
@@ -111,8 +89,33 @@ const Auth = () => {
     }
   };
 
+  const loginWithGoogle = useGoogleLogin({
+    onSuccess: async (tokenResponse) => {
+      try {
+        setLoading(true);
+        const response = await authService.googleLogin(tokenResponse.access_token);
+        toast({ title: "Bienvenue !", description: "Connexion Google réussie." });
+        handleRedirect(response.user.role);
+      } catch (error: any) {
+        toast({
+          title: "Erreur",
+          description: error.response?.data?.error || "Erreur de connexion Google.",
+          variant: "destructive",
+        });
+      } finally {
+        setLoading(false);
+      }
+    },
+    onError: () => {
+      toast({
+        title: "Erreur",
+        description: "La connexion Google a échoué.",
+        variant: "destructive",
+      });
+    }
+  });
+
   const fillDemo = (email: string, password: string) => {
-    setIsLogin(true);
     requestAnimationFrame(() => {
       const emailInput = document.getElementById("email") as HTMLInputElement | null;
       const passwordInput = document.getElementById("password") as HTMLInputElement | null;
@@ -127,24 +130,13 @@ const Auth = () => {
     const formData = new FormData(e.currentTarget);
     const data = Object.fromEntries(formData.entries());
     try {
-      if (isLogin) {
-        const response = await authService.login(data.email as string, data.password as string);
-        toast({ title: "Bienvenue !", description: "Connexion réussie." });
-        handleRedirect(response.user.role);
-      } else {
-        await authService.register({ ...data, role });
-        toast({
-          title: "Compte créé !",
-          description: role === "CLIENT"
-            ? "Bienvenue sur Sankofa."
-            : "Votre dossier est en attente de validation.",
-        });
-        handleRedirect(role);
-      }
+      const response = await authService.login(data.email as string, data.password as string);
+      toast({ title: "Bienvenue !", description: "Connexion réussie." });
+      handleRedirect(response.user.role);
     } catch (error: any) {
       toast({
         title: "Erreur",
-        description: error.response?.data?.email?.[0] || "Une erreur est survenue.",
+        description: error.message || "Une erreur est survenue.",
         variant: "destructive",
       });
     } finally {
@@ -152,7 +144,6 @@ const Auth = () => {
     }
   };
 
-  /* ── Styles globaux injectés via <style> dans le head ── */
   const css = `
     @import url('https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;1,300;1,400&family=DM+Sans:wght@300;400;500&display=swap');
     .sk-page { font-family: 'DM Sans', sans-serif; display: grid; grid-template-columns: 1fr; }
@@ -160,10 +151,6 @@ const Auth = () => {
     .sk-form-container { padding: 32px 24px; }
     @media (min-width: 768px) { .sk-form-container { padding: 48px 40px; } }
     .sk-field input::placeholder { color: rgba(245,240,232,0.2); }
-    .sk-tab-active { background: #C9A84C !important; color: #09090A !important; }
-    .sk-tab:not(.sk-tab-active):hover { background: rgba(245,240,232,0.06); color: #F5F0E8; }
-    .sk-pill-active { border-color: #C9A84C !important; background: rgba(201,168,76,0.12) !important; color: #E2C47A !important; }
-    .sk-pill:not(.sk-pill-active):hover { border-color: rgba(201,168,76,0.4); color: #F5F0E8; }
     .sk-social:hover { border-color: rgba(201,168,76,0.45); color: #F5F0E8; background: rgba(245,240,232,0.05); }
     .sk-submit:hover { background: #D4B05A; }
     .sk-submit:active { transform: scale(0.985); }
@@ -175,37 +162,18 @@ const Auth = () => {
     .sk-fadein-3 { animation: skFadeUp 0.7s ease both 0.4s; }
     @keyframes skFloat { 0%,100%{transform:translateY(0)} 50%{transform:translateY(-8px)} }
     .sk-float { animation: skFloat 5s ease-in-out infinite; }
-    @keyframes skSlideDown { from { opacity:0; max-height:0; } to { opacity:1; max-height:600px; } }
-    .sk-slide { animation: skSlideDown 0.45s ease both; }
-    input[type=file].sk-file { color: rgba(245,240,232,0.5); font-size: 13px; }
-    input[type=file].sk-file::file-selector-button {
-      background: rgba(201,168,76,0.12); border: 1px solid rgba(201,168,76,0.3);
-      color: #C9A84C; border-radius: 3px; padding: 4px 10px; font-size: 12px;
-      font-family: 'DM Sans', sans-serif; cursor: pointer; margin-right: 10px;
-    }
-    select.sk-select { color: #F5F0E8; }
-    select.sk-select option { background: #1A1A18; }
     .sk-deco-line {
       position: absolute; right: 0; top: 0; bottom: 0; width: 1px;
       background: linear-gradient(to bottom, transparent 5%, rgba(201,168,76,0.28) 30%, rgba(201,168,76,0.28) 70%, transparent 95%);
     }
   `;
 
-  const inp = {
-    width: "100%", background: "rgba(245,240,232,0.05)",
-    border: "1px solid rgba(201,168,76,0.22)", borderRadius: 4,
-    color: "#F5F0E8", fontFamily: "'DM Sans', sans-serif", fontSize: 14,
-    padding: "13px 14px 13px 42px", outline: "none",
-    transition: "border-color .2s, background .2s",
-  } as React.CSSProperties;
-
   return (
     <>
       <style>{css}</style>
       <div className="sk-page" style={{ minHeight: "100vh", background: "#09090A", color: "#F5F0E8" }}>
-        {/* ════════════════════════════════
-            PANNEAU GAUCHE
-        ════════════════════════════════ */}
+        
+        {/* PANNEAU GAUCHE */}
         <div
           style={{
             position: "relative", background: "#0F0F0D",
@@ -218,7 +186,6 @@ const Auth = () => {
           <KenteGrid />
           <div className="sk-deco-line" />
 
-          {/* Wordmark */}
           <div
             className="sk-fadein"
             style={{
@@ -232,7 +199,6 @@ const Auth = () => {
             San · Kɔ · Fa
           </div>
 
-          {/* Mark central */}
           <div
             style={{
               display: "flex", alignItems: "center", justifyContent: "center",
@@ -244,7 +210,6 @@ const Auth = () => {
             </div>
           </div>
 
-          {/* Proverbe */}
           <div style={{ position: "relative", zIndex: 1, textAlign: "center" }}>
             <p
               className="sk-fadein-2"
@@ -272,9 +237,7 @@ const Auth = () => {
           </div>
         </div>
 
-        {/* ════════════════════════════════
-            PANNEAU DROIT — FORMULAIRE
-        ════════════════════════════════ */}
+        {/* PANNEAU DROIT — FORMULAIRE */}
         <div className="sk-form-container" style={{ display: "flex", alignItems: "center", justifyContent: "center", background: "#09090A" }}>
           <div
             className="sk-fadein-1"
@@ -301,34 +264,6 @@ const Auth = () => {
               </div>
             </div>
 
-            {/* Tabs */}
-            <div
-              style={{
-                display: "grid", gridTemplateColumns: "1fr 1fr",
-                border: "1px solid rgba(201,168,76,0.25)", borderRadius: 5,
-                overflow: "hidden", marginBottom: 36,
-              }}
-            >
-              {["login", "register"].map((mode, i) => (
-                <button
-                  key={mode}
-                  className={`sk-tab ${isLogin === (mode === "login") ? "sk-tab-active" : ""}`}
-                  onClick={() => setIsLogin(mode === "login")}
-                  style={{
-                    background: "transparent", border: "none",
-                    color: "rgba(245,240,232,0.5)",
-                    fontFamily: "'DM Sans', sans-serif", fontSize: 11,
-                    fontWeight: 500, letterSpacing: "0.14em",
-                    padding: "13px 0", cursor: "pointer",
-                    transition: "all .2s", textTransform: "uppercase" as any,
-                  }}
-                >
-                  {i === 0 ? "Connexion" : "Inscription"}
-                </button>
-              ))}
-            </div>
-
-            {/* Heading */}
             <div style={{ marginBottom: 32 }}>
               <h1
                 style={{
@@ -337,21 +272,14 @@ const Auth = () => {
                   lineHeight: 1.1, color: "#F5F0E8", marginBottom: 6,
                 }}
               >
-                {isLogin
-                  ? <>Bon <em style={{ color: "#D4B05A", fontStyle: "italic" }}>retour</em></>
-                  : <>Rejoignez <em style={{ color: "#D4B05A", fontStyle: "italic" }}>l'héritage</em></>
-                }
+                Bon <em style={{ color: "#D4B05A", fontStyle: "italic" }}>retour</em>
               </h1>
               <p style={{ fontSize: 13, color: "rgba(245,240,232,0.42)", lineHeight: 1.6 }}>
-                {isLogin
-                  ? "Accédez à votre espace Sankofa"
-                  : "Démarrez votre aventure africaine avec nous"}
+                Accédez à votre espace Sankofa
               </p>
             </div>
 
-            {/* Formulaire */}
             <form onSubmit={handleAuth} style={{ display: "flex", flexDirection: "column", gap: 16 }}>
-              {/* Email */}
               <div className="sk-field">
                 <label style={{
                   display: "block", fontSize: 10, letterSpacing: "0.22em",
@@ -362,132 +290,24 @@ const Auth = () => {
                   placeholder="nom@exemple.com" required icon={Mail} />
               </div>
 
-              {/* Mot de passe */}
               <div className="sk-field">
-                <label style={{
-                  display: "block", fontSize: 10, letterSpacing: "0.22em",
-                  textTransform: "uppercase" as any, color: "rgba(201,168,76,0.65)",
-                  marginBottom: 7, fontWeight: 500,
-                }}>Mot de passe</label>
+                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 7 }}>
+                  <label style={{
+                    fontSize: 10, letterSpacing: "0.22em",
+                    textTransform: "uppercase" as any, color: "rgba(201,168,76,0.65)",
+                    fontWeight: 500,
+                  }}>Mot de passe</label>
+                  <Link to="/forgot-password" style={{
+                    fontSize: 10, color: "rgba(201,168,76,0.8)", textDecoration: "none",
+                    transition: "color .2s"
+                  }}>
+                    Mot de passe oublié ?
+                  </Link>
+                </div>
                 <GoldInput id="password" name="password" type="password"
                   placeholder="••••••••" required icon={Lock} />
               </div>
 
-              {/* Champs d'inscription */}
-              {!isLogin && (
-                <div className="sk-slide" style={{ display: "flex", flexDirection: "column", gap: 16 }}>
-
-                  {/* Sélection de rôle */}
-                  <div>
-                    <label style={{
-                      display: "block", fontSize: 10, letterSpacing: "0.22em",
-                      textTransform: "uppercase" as any, color: "rgba(201,168,76,0.65)",
-                      marginBottom: 10, fontWeight: 500,
-                    }}>Type de compte</label>
-                    <div style={{ display: "grid", gridTemplateColumns: "repeat(3,1fr)", gap: 8 }}>
-                      {roles.map(({ value, label, sub, icon: Icon }) => (
-                        <button
-                          key={value} type="button"
-                          className={`sk-pill ${role === value ? "sk-pill-active" : ""}`}
-                          onClick={() => setRole(value)}
-                          style={{
-                            border: "1px solid rgba(201,168,76,0.2)",
-                            borderRadius: 4, background: "transparent",
-                            color: "rgba(245,240,232,0.45)",
-                            fontFamily: "'DM Sans', sans-serif",
-                            fontSize: 11, letterSpacing: "0.06em",
-                            padding: "12px 4px 10px",
-                            cursor: "pointer", transition: "all .2s",
-                            textAlign: "center" as any,
-                            display: "flex", flexDirection: "column" as any,
-                            alignItems: "center", gap: 6,
-                          }}
-                        >
-                          <Icon size={18} />
-                          <span style={{ fontWeight: 500 }}>{label}</span>
-                          <span style={{ fontSize: 9, letterSpacing: "0.1em", opacity: 0.6 }}>{sub}</span>
-                        </button>
-                      ))}
-                    </div>
-                  </div>
-
-                  {/* Boutique (SELLER) */}
-                  {role === "SELLER" && (
-                    <div className="sk-field sk-slide">
-                      <label style={{
-                        display: "block", fontSize: 10, letterSpacing: "0.22em",
-                        textTransform: "uppercase" as any, color: "rgba(201,168,76,0.65)",
-                        marginBottom: 7, fontWeight: 500,
-                      }}>Nom de la boutique</label>
-                      <GoldInput id="business_name" name="business_name"
-                        placeholder="Ex: Ateliers d'Abidjan" required icon={Store} />
-                    </div>
-                  )}
-
-                  {/* Transporteur */}
-                  {role === "TRANSPORTER" && (
-                    <div className="sk-slide" style={{ display: "flex", flexDirection: "column", gap: 16 }}>
-                      <div className="sk-field">
-                        <label style={{
-                          display: "block", fontSize: 10, letterSpacing: "0.22em",
-                          textTransform: "uppercase" as any, color: "rgba(201,168,76,0.65)",
-                          marginBottom: 7, fontWeight: 500,
-                        }}>Type de véhicule</label>
-                        <div style={{ position: "relative" }}>
-                          <Truck size={15} style={{
-                            position: "absolute", left: 14, top: "50%", transform: "translateY(-50%)",
-                            color: "rgba(201,168,76,0.5)", pointerEvents: "none",
-                          }} />
-                          <select name="vehicle_type" defaultValue="MOTORCYCLE"
-                            className="sk-select"
-                            style={{ ...inp, padding: "13px 14px 13px 42px" }}>
-                            <option value="MOTORCYCLE">Vélomoteur</option>
-                            <option value="VAN">Camionnette</option>
-                            <option value="TRUCK">Camion</option>
-                          </select>
-                        </div>
-                      </div>
-                      <div className="sk-field">
-                        <label style={{
-                          display: "block", fontSize: 10, letterSpacing: "0.22em",
-                          textTransform: "uppercase" as any, color: "rgba(201,168,76,0.65)",
-                          marginBottom: 7, fontWeight: 500,
-                        }}>Zone de couverture</label>
-                        <GoldInput id="coverage_area" name="coverage_area"
-                          placeholder="Ex: Abidjan, Dakar, Lagos" required icon={Truck} />
-                      </div>
-                    </div>
-                  )}
-
-                  {/* Pièce d'identité */}
-                  {(role === "SELLER" || role === "TRANSPORTER") && (
-                    <div className="sk-slide">
-                      <label style={{
-                        display: "block", fontSize: 10, letterSpacing: "0.22em",
-                        textTransform: "uppercase" as any, color: "rgba(201,168,76,0.65)",
-                        marginBottom: 7, fontWeight: 500,
-                      }}>Pièce d'identité (PDF / Image)</label>
-                      <input id="id_card" name="id_card" type="file"
-                        className="sk-file"
-                        required
-                        style={{
-                          width: "100%", background: "rgba(245,240,232,0.04)",
-                          border: "1px solid rgba(201,168,76,0.2)", borderRadius: 4,
-                          padding: "11px 12px", outline: "none",
-                        }}
-                      />
-                      <p style={{
-                        fontSize: 10, color: "rgba(245,240,232,0.3)",
-                        marginTop: 6, display: "flex", alignItems: "center", gap: 5,
-                      }}>
-                        <ShieldCheck size={11} /> Requis pour la validation du profil professionnel.
-                      </p>
-                    </div>
-                  )}
-                </div>
-              )}
-
-              {/* Bouton principal */}
               <button
                 type="submit"
                 disabled={loading}
@@ -502,7 +322,7 @@ const Auth = () => {
                   marginTop: 4, display: "flex", alignItems: "center", justifyContent: "center", gap: 10,
                 }}
               >
-                {loading ? "Chargement..." : isLogin ? "Se connecter" : "Créer mon compte"}
+                {loading ? "Chargement..." : "Se connecter"}
                 <ArrowRight
                   size={15}
                   style={{ transition: "transform .2s", transform: hoverBtn ? "translateX(4px)" : "none" }}
@@ -510,7 +330,15 @@ const Auth = () => {
               </button>
             </form>
 
-            {/* Séparateur */}
+            <div style={{ textAlign: "center", marginTop: 20 }}>
+              <p style={{ fontSize: 13, color: "rgba(245,240,232,0.6)" }}>
+                Pas encore de compte ?{" "}
+                <Link to="/register" style={{ color: "#C9A84C", textDecoration: "none", fontWeight: 500, borderBottom: "1px solid rgba(201,168,76,0.4)" }}>
+                  S'inscrire
+                </Link>
+              </p>
+            </div>
+
             <div style={{ display: "flex", alignItems: "center", gap: 14, margin: "24px 0" }}>
               <div style={{ flex: 1, height: 1, background: "rgba(201,168,76,0.18)" }} />
               <span style={{
@@ -520,66 +348,73 @@ const Auth = () => {
               <div style={{ flex: 1, height: 1, background: "rgba(201,168,76,0.18)" }} />
             </div>
 
-            {/* Boutons sociaux */}
             <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10 }}>
-              {["Google", "Apple"].map((provider) => (
-                <button
-                  key={provider}
-                  className="sk-social"
-                  style={{
-                    border: "1px solid rgba(201,168,76,0.2)", borderRadius: 4,
-                    background: "transparent", color: "rgba(245,240,232,0.45)",
-                    fontFamily: "'DM Sans', sans-serif", fontSize: 12,
-                    letterSpacing: "0.06em", padding: "11px",
-                    cursor: "pointer", transition: "all .2s",
-                  }}
-                >
-                  {provider}
-                </button>
-              ))}
+              <button
+                type="button"
+                className="sk-social"
+                onClick={() => loginWithGoogle()}
+                style={{
+                  border: "1px solid rgba(201,168,76,0.2)", borderRadius: 4,
+                  background: "transparent", color: "rgba(245,240,232,0.45)",
+                  fontFamily: "'DM Sans', sans-serif", fontSize: 12,
+                  letterSpacing: "0.06em", padding: "11px",
+                  cursor: "pointer", transition: "all .2s",
+                }}
+              >
+                Google
+              </button>
+              <button
+                type="button"
+                className="sk-social"
+                style={{
+                  border: "1px solid rgba(201,168,76,0.2)", borderRadius: 4,
+                  background: "transparent", color: "rgba(245,240,232,0.45)",
+                  fontFamily: "'DM Sans', sans-serif", fontSize: 12,
+                  letterSpacing: "0.06em", padding: "11px",
+                  cursor: "pointer", transition: "all .2s",
+                }}
+              >
+                Apple
+              </button>
             </div>
 
-            {/* Comptes de démonstration */}
-            {isLogin && (
-              <div style={{
-                marginTop: 20, padding: "14px 16px", borderRadius: 5,
-                border: "1px dashed rgba(201,168,76,0.28)", background: "rgba(201,168,76,0.04)",
+            <div style={{
+              marginTop: 20, padding: "14px 16px", borderRadius: 5,
+              border: "1px dashed rgba(201,168,76,0.28)", background: "rgba(201,168,76,0.04)",
+            }}>
+              <p style={{
+                fontSize: 10, letterSpacing: "0.18em", textTransform: "uppercase" as any,
+                color: "rgba(201,168,76,0.75)", fontWeight: 600, marginBottom: 10,
+                display: "flex", alignItems: "center", gap: 6,
               }}>
-                <p style={{
-                  fontSize: 10, letterSpacing: "0.18em", textTransform: "uppercase" as any,
-                  color: "rgba(201,168,76,0.75)", fontWeight: 600, marginBottom: 10,
-                  display: "flex", alignItems: "center", gap: 6,
-                }}>
-                  <Sparkles size={11} /> Comptes de démonstration
-                </p>
-                <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
-                  {DEMO_ACCOUNTS.map((acc) => (
-                    <button
-                      key={acc.email}
-                      type="button"
-                      onClick={() => fillDemo(acc.email, acc.password)}
-                      style={{
-                        display: "flex", justifyContent: "space-between", alignItems: "center",
-                        background: "transparent", border: "1px solid rgba(201,168,76,0.15)",
-                        borderRadius: 4, padding: "8px 12px", cursor: "pointer",
-                        color: "rgba(245,240,232,0.55)", fontSize: 11, fontFamily: "'DM Sans', sans-serif",
-                        transition: "all .2s", textAlign: "left" as any,
-                      }}
-                      onMouseEnter={(e) => { e.currentTarget.style.borderColor = "rgba(201,168,76,0.5)"; e.currentTarget.style.color = "#F5F0E8"; }}
-                      onMouseLeave={(e) => { e.currentTarget.style.borderColor = "rgba(201,168,76,0.15)"; e.currentTarget.style.color = "rgba(245,240,232,0.55)"; }}
-                    >
-                      <span style={{ fontWeight: 600, color: "#C9A84C" }}>{acc.role}</span>
-                      <span style={{ fontFamily: "monospace", fontSize: 10 }}>{acc.email}</span>
-                    </button>
-                  ))}
-                </div>
-                <p style={{ fontSize: 9, color: "rgba(245,240,232,0.25)", marginTop: 8 }}>
-                  Cliquez pour pré-remplir, mot de passe identique pour les trois : <strong>password123</strong>
-                </p>
+                <Sparkles size={11} /> Comptes de démonstration
+              </p>
+              <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+                {DEMO_ACCOUNTS.map((acc) => (
+                  <button
+                    key={acc.email}
+                    type="button"
+                    onClick={() => fillDemo(acc.email, acc.password)}
+                    style={{
+                      display: "flex", justifyContent: "space-between", alignItems: "center",
+                      background: "transparent", border: "1px solid rgba(201,168,76,0.15)",
+                      borderRadius: 4, padding: "8px 12px", cursor: "pointer",
+                      color: "rgba(245,240,232,0.55)", fontSize: 11, fontFamily: "'DM Sans', sans-serif",
+                      transition: "all .2s", textAlign: "left" as any,
+                    }}
+                    onMouseEnter={(e) => { e.currentTarget.style.borderColor = "rgba(201,168,76,0.5)"; e.currentTarget.style.color = "#F5F0E8"; }}
+                    onMouseLeave={(e) => { e.currentTarget.style.borderColor = "rgba(201,168,76,0.15)"; e.currentTarget.style.color = "rgba(245,240,232,0.55)"; }}
+                  >
+                    <span style={{ fontWeight: 600, color: "#C9A84C" }}>{acc.role}</span>
+                    <span style={{ fontFamily: "monospace", fontSize: 10 }}>{acc.email}</span>
+                  </button>
+                ))}
               </div>
-            )}
+              <p style={{ fontSize: 9, color: "rgba(245,240,232,0.25)", marginTop: 8 }}>
+                Cliquez pour pré-remplir, mot de passe identique pour les trois : <strong>password123</strong>
+              </p>
+            </div>
 
-            {/* Notice sécurité */}
             <p style={{
               fontSize: 10, color: "rgba(245,240,232,0.25)",
               display: "flex", alignItems: "center", gap: 6, marginTop: 18,
