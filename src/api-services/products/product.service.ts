@@ -25,8 +25,16 @@ export interface Product {
 
 export const productService = {
   /** GET /api/products/ — Récupère tous les produits avec filtres optionnels */
-  getProducts(params?: Record<string, string>): Promise<Product[]> {
-    const qs = params ? new URLSearchParams(params).toString() : '';
+  getProducts(params?: Record<string, any>): Promise<Product[]> {
+    const cleanParams: Record<string, string> = {};
+    if (params) {
+      Object.entries(params).forEach(([key, value]) => {
+        if (value !== undefined && value !== null && value !== 'undefined' && value !== '') {
+          cleanParams[key] = String(value);
+        }
+      });
+    }
+    const qs = new URLSearchParams(cleanParams).toString();
     return apiClient.get<Product[]>(`${BASE}/${qs ? `?${qs}` : ''}`);
   },
 

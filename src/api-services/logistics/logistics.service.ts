@@ -32,6 +32,18 @@ export interface Shipment {
   weight: number;
 }
 
+export interface Route {
+  id: number;
+  transporter: number;
+  origin: string;
+  destination: string;
+  frequency?: string;
+  price_per_kg: number;
+  pricing_mode: string;
+  category_prices: any[];
+  product_exceptions: any[];
+}
+
 export const logisticsService = {
   /** GET /api/logistics/transporters/ — Récupère les transporteurs vérifiés */
   getTransporters(): Promise<Transporter[]> {
@@ -51,5 +63,20 @@ export const logisticsService = {
   /** POST /api/logistics/shipments/:id/update-status/ — Met à jour le statut d'une expédition */
   updateShipmentStatus(id: number, status: string, verification_code?: string): Promise<Shipment> {
     return apiClient.post<Shipment>(`${BASE}/shipments/${id}/update-status/`, { status, verification_code });
+  },
+
+  /** GET /api/logistics/routes/ — Récupère les itinéraires du transporteur */
+  getRoutes(): Promise<Route[]> {
+    return apiClient.get<Route[]>(`${BASE}/routes/`);
+  },
+
+  /** POST /api/logistics/routes/ — Crée un nouvel itinéraire */
+  createRoute(data: any): Promise<Route> {
+    return apiClient.post<Route>(`${BASE}/routes/`, data);
+  },
+
+  /** DELETE /api/logistics/routes/:id/ — Supprime un itinéraire */
+  deleteRoute(id: number): Promise<void> {
+    return apiClient.delete<void>(`${BASE}/routes/${id}/`);
   }
 };
