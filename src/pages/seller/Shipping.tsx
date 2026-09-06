@@ -31,7 +31,7 @@ export function Shipping() {
   useEffect(() => {
     const fetchData = async () => {
       try {
-        const [orderData, transData] = await Promise.all([
+        const [orderData, transData, shipData] = await Promise.all([
           orderService.getSellerOrders(),
           logisticsService.getTransporters(),
           logisticsService.getShipments()
