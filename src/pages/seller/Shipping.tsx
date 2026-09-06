@@ -33,7 +33,7 @@ export function Shipping() {
       try {
         const [orderData, transData] = await Promise.all([
           orderService.getSellerOrders(),
-          logisticsService.getTransporters()
+          logisticsService.getTransporters(),
           logisticsService.getShipments()
         ]);
         setOrders(orderData);
