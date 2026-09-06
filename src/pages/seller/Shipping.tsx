@@ -5,14 +5,14 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { ShoppingBag, Box, AlertTriangle, HandHeart, Package, Sparkles, FileText, Weight, MapPin, ShieldCheck, Globe, CheckCircle } from "lucide-react";
-import { toast } from "sonner";
+import { ShoppingBag, Box, AlertTriangle, HandHeart, Package, Sparkles, FileText, Weight, MapPin, ShieldCheck, Globe, CheckCircle, Truck, ArrowRight, Lock } from "lucide-react";import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 import { useNavigate } from "react-router-dom";
 
 export function Shipping() {
   const [orders, setOrders] = useState<any[]>([]);
   const [transporters, setTransporters] = useState<any[]>([]);
+  const [shipments, setShipments] = useState<any[]>([]);
   const [user, setUser] = useState<any>(authService.getCurrentUser());
   const [preselectedTransporterId, setPreselectedTransporterId] = useState<number | null>(null);
 
@@ -34,9 +34,11 @@ export function Shipping() {
         const [orderData, transData] = await Promise.all([
           orderService.getSellerOrders(),
           logisticsService.getTransporters()
+          logisticsService.getShipments()
         ]);
         setOrders(orderData);
         setTransporters(transData);
+        setShipments(shipData);
 
         const urlParams = new URLSearchParams(window.location.search);
         const orderId = urlParams.get('order_id');
@@ -114,10 +116,62 @@ export function Shipping() {
     };
   };
 
+  const getStatusColor = (status: string) => {
+    switch (status) {
+      case 'PAID': return 'bg-green-500/10 text-green-500 border-green-500/20';
+      case 'SHIPPED': return 'bg-blue-500/10 text-blue-500 border-blue-500/20';
+      case 'DELIVERED': return 'bg-accent/10 text-accent border-accent/20';
+      default: return 'bg-white/5 text-white/40 border-white/10';
+    }
+  };
+
   return (
     <div className="space-y-8 animate-in slide-in-from-right-4 duration-500">
+      {shipments.length > 0 && (
+        <div className="space-y-4 animate-in slide-in-from-bottom-4 duration-700">
+           <h3 className="text-sm font-bold uppercase tracking-widest text-accent flex items-center gap-2">
+             <Truck size={16} /> Mes expéditions actives
+           </h3>
+           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              {shipments.map(ship => (
+                <Card key={ship.id} className="bg-white/5 border-white/10 group hover:border-accent/30 overflow-hidden shadow-2xl">
+                   <div className="p-4">
+                      <div className="flex justify-between items-start gap-4 mb-4">
+                         <div className="flex items-center gap-3">
+                            <Package size={16} className="text-accent" />
+                            <span className="text-sm font-bold">Colis #{ship.id}</span>
+                         </div>
+                         <Badge variant="outline" className={cn("text-[8px] uppercase font-bold", getStatusColor(ship.status))}>
+                            {ship.status}
+                         </Badge>
+                      </div>
+                      <div className="flex items-center gap-2 mb-4 text-[11px] text-white/40">
+                         <MapPin size={10} />
+                         <span>{ship.origin} <ArrowRight size={10} className="inline mx-1" /> {ship.destination}</span>
+                      </div>
+                      {ship.status !== 'DELIVERED' && ship.status !== 'CANCELLED' && ship.verification_code && (
+                        <div className="p-3 rounded-lg bg-accent/5 border border-accent/20 flex items-center justify-between">
+                           <div className="space-y-0.5">
+                              <p className="text-[9px] uppercase font-bold text-accent/60 tracking-widest leading-none">Code de sécurité</p>
+                              <p className="text-xs font-mono font-bold text-accent tracking-[0.3em]">{ship.verification_code}</p>
+                           </div>
+                           <Lock size={12} className="text-accent/40" />
+                        </div>
+                      )}
+                      {ship.status === 'DELIVERED' && (
+                         <div className="flex items-center gap-2 text-[10px] text-accent font-bold bg-accent/10 p-2 rounded-lg border border-accent/20">
+                            <CheckCircle size={12} /> Colis livré avec succès
+                         </div>
+                      )}
+                   </div>
+                </Card>
+              ))}
+           </div>
+        </div>
+      )}
+
       <div className="flex flex-wrap gap-4 bg-white/5 p-1 rounded-xl w-fit border border-white/5">
-          <button 
+          <button
           onClick={() => setShipmentType("MARKETPLACE")}
           className={cn(
               "flex items-center gap-2 px-6 py-2.5 rounded-lg text-sm font-medium transition-all",
